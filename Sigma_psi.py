@@ -8,35 +8,63 @@ plt.style.use(['science', 'notebook', 'grid'])
 filename = "/Users/timotheschmidt/Documents/MINES/2A/Stage PNU/Simu/DATA_SIMS/Output00034_size0128_hyperCube.fits"
 file = fits.open(filename)
 
-def Stokes_xy(file,x,y):
-    n = 128
-    dz = 1
+    
+def _Q_tab(x,y):
     p_0 = 1
-    S = [0,0]
-    for z in range(n):
-        rho, b_x, b_y, b_z = file[0].data[x,y,z], file[4].data[x,y,z], file[5].data[x,y,z], file[6].data[x,y,z]
-        b_norm = np.sqrt(b_x**2 + b_y**2 + b_z**2)
-        S[0] += rho * p_0 *(b_x**2 - b_y**2)/b_norm**2 * dz
-        S[1] += 2 * rho * p_0 * b_x * b_y /b_norm**2 * dz
-    return S
+    Bx = file[4].data[x,y,:]
+    By = file[5].data[x,y,:]
+    Bz = file[6].data[x,y,:]
+    N = file[0].data[x,y,:]
+    B  = Bx**2 + By**2 + Bz**2
+    
+    vecQ = p_0 * N *(Bx**2 - By**2) / B 
+    Q = np.sum(vecQ)
 
-def psi(Q,U):
+    return Q
+
+def _U_tab(x,y):
+    p_0 = 1
+    Bx = file[4].data[x,y,:]
+    By = file[5].data[x,y,:]
+    Bz = file[6].data[x,y,:]
+    N = file[0].data[x,y,:]
+    B  = Bx**2 + By**2 + Bz**2
+    
+    
+    vecU = 2 * p_0 * N * Bx * By /B
+    U = np.sum(vecU)
+
+    return U
+
+U_tab = np.vectorize(_U_tab)
+Q_tab = np.vectorize(_Q_tab)
+
+def _psi(Q,U):
     return np.arctan(U/Q)
 
-def psi_tab(file):
-    n = 128
-    tab = np.zeros((n,n))
-    for x in range(n):
-        for y in range(n):
-            S = Stokes_xy(file, x, y)
-            Q, U = S[0], S[1]
-            tab[x,y] = psi(Q,U)
+psi = np.vectorize(_psi)
+
+def psi_tab():
+    #Q = Q_tab(np.arange(128), np.arange(128))        à essayer
+    #U  = U_tab(np.arange(128), np.arange(128))
+    
+    Q_Tab = np.zeros((128, 128))
+    U_Tab = np.zeros((128, 128))
+
+    for x in range(128):
+        for y in range(128):
+             Q_Tab[x, y] = Q_tab(x, y)
+             U_Tab[x, y] = U_tab(x, y)
+
+   
+    A = Q_Tab / U_Tab
+    tab = 0.5 * np.arctan(A)
     return tab
 
 
-def sigma_psi_global(file):
-    return np.std(psi_tab(file))*180/np.pi
+def sigma_psi_global():
+    return np.std(psi_tab())*180/np.pi
 
-def sigma_psi_line(file):
+def sigma_psi_line():
     """returns an array of sigma_psi of each line"""
-    return np.std(psi_tab(file), 0)*180/np.pi
+    return np.std(psi_tab(), 0)*180/np.pi
