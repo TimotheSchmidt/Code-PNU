@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
 from astropy.io import fits
-import scienceplots
-plt.style.use(['science', 'notebook', 'grid'])
 
 filename = "/Users/timotheschmidt/Documents/MINES/2A/Stage PNU/Simu/DATA_SIMS/Output00034_size0128_hyperCube.fits"
 file = fits.open(filename)
